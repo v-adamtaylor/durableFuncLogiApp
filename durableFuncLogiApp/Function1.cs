@@ -24,13 +24,17 @@ namespace durableFuncLogiApp
 
             try
             {
-                DateTime dueTime = context.CurrentUtcDateTime.AddSeconds(15);
+                DateTime dueTime = context.CurrentUtcDateTime.AddSeconds(10);
                 await context.CreateTimer(dueTime, CancellationToken.None);
 
                 // Replace "hello" with the name of your Durable Activity Function.
                 outputs.Add(await context.CallActivityAsync<string>("Function1_Hello", "Tokyo"));
                 outputs.Add(await context.CallActivityAsync<string>("Function1_Hello", "Seattle"));
                 outputs.Add(await context.CallActivityAsync<string>("Function1_Hello", "London"));
+
+
+                // Setting custom status to "Completed"
+                context.SetCustomStatus("Custom->Complete");
 
                 // If everything is successful, return a 200 OK status.
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -42,6 +46,9 @@ namespace durableFuncLogiApp
             {
                 log.LogError($"Function failed with exception: {ex.Message}");
 
+                // Setting custom status to "Failed"
+                context.SetCustomStatus("Custom->Fail");
+
                 // If a function fails, return a 500 Internal Server Error status.
                 return new HttpResponseMessage(HttpStatusCode.InternalServerError)
                 {
@@ -51,6 +58,9 @@ namespace durableFuncLogiApp
             catch (Exception ex)
             {
                 log.LogError($"An error occurred: {ex.Message}");
+
+                // Setting custom status to "Error"
+                context.SetCustomStatus("Custom->Error");
 
                 // For other types of exceptions, you might choose to return a 400 Bad Request or another appropriate status.
                 return new HttpResponseMessage(HttpStatusCode.BadRequest)
@@ -67,7 +77,7 @@ namespace durableFuncLogiApp
 
             // Introducing random failure
             var rand = new Random();
-            if (rand.Next(0, 4) == 0) // 25% chance of failure
+            if (rand.Next(0, 5) == 0) // 1/6 Chance of Failure
             {
                 throw new Exception("Random failure occurred");
             }
